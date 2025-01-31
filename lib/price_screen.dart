@@ -32,6 +32,7 @@ class _PriceScreenState extends State<PriceScreen> {
           setState(() {
             selectedCurrency = value;
             getData();
+            test();
           });
         }
       },
@@ -51,20 +52,45 @@ class _PriceScreenState extends State<PriceScreen> {
         setState(() {
           selectedCurrency = currenciesList[selectedindex];
           getData();
+          test();
         });
       },
       children: pickerItems,
     );
   }
 
-  String bitcoinValue = '?';
+  // String bitcoinValue = '?';
+  Map<String, String> coinValues = {};
+  bool isWaiting = false;
 
   void getData() async {
+    isWaiting = true;
+    setState(() {});
     try {
       var data = await CoinData().getCoinData(selectedCurrency);
       setState(() {
-        bitcoinValue = data;
+        coinValues = data;
+        isWaiting = false;
       });
+    } catch (e) {
+      print(e);
+      setState(() {
+        isWaiting = false;
+      });
+    }
+  }
+
+  void test() async {
+    CoinData coinData = CoinData();
+    // try {
+    //   String rate = await coinData.getCoinData('$selectedCurrency');
+    //   print('BTC to $selectedCurrency Rate: $rate');
+    // } catch (e) {
+    //   print(e);
+    // }
+    try {
+      Map<String, String> rates = await coinData.getCoinData(selectedCurrency);
+      print('Exchange Rates for $selectedCurrency: $rates');
     } catch (e) {
       print(e);
     }
@@ -74,6 +100,7 @@ class _PriceScreenState extends State<PriceScreen> {
   void initState() {
     super.initState();
     getData();
+    test();
   }
 
   @override
@@ -87,27 +114,20 @@ class _PriceScreenState extends State<PriceScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18.0, 18.0, 18.0, 0),
-            child: Card(
-              color: Colors.lightBlueAccent,
-              elevation: 5.0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    vertical: 15.0, horizontal: 28.0),
-                child: Text(
-                  '1 BTC = $bitcoinValue $selectedCurrency', // Dynamically display the selected currency
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 20.0,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
+          CryptoCard(
+            value: isWaiting ? '?' : (coinValues['BTC'] ?? '?'),
+            selectedCurrency: selectedCurrency,
+            cryptoCurrency: 'BTC',
+          ),
+          CryptoCard(
+            value: isWaiting ? '?' : (coinValues['ETH'] ?? '?'),
+            selectedCurrency: selectedCurrency,
+            cryptoCurrency: 'ETH',
+          ),
+          CryptoCard(
+            value: isWaiting ? '?' : (coinValues['LTC'] ?? '?'),
+            selectedCurrency: selectedCurrency,
+            cryptoCurrency: 'LTC',
           ),
           Container(
             height: 150.0,
@@ -117,6 +137,44 @@ class _PriceScreenState extends State<PriceScreen> {
             child: Platform.isIOS ? iOSPicker() : andriodDropdownItems(),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class CryptoCard extends StatelessWidget {
+  const CryptoCard({
+    super.key,
+    required this.value,
+    required this.cryptoCurrency,
+    required this.selectedCurrency,
+  });
+
+  final String value;
+  final String cryptoCurrency;
+  final String selectedCurrency;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18.0, 18.0, 18.0, 0),
+      child: Card(
+        color: Colors.lightBlueAccent,
+        elevation: 5.0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10.0),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 28.0),
+          child: Text(
+            '1 $cryptoCurrency = $value $selectedCurrency', // Dynamically display the selected currency
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 20.0,
+              color: Colors.white,
+            ),
+          ),
+        ),
       ),
     );
   }

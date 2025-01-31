@@ -32,26 +32,35 @@ const List<String> cryptoList = [
 ];
 
 const coinapiURL = 'https://rest.coinapi.io/v1/exchangerate';
-const apikey = 'api key';
+const apikey = 'API KEY IS HERE';
 
 class CoinData {
   Future getCoinData(String selectedCurrency) async {
-    String requestURL = '$coinapiURL/BTC/$selectedCurrency?apikey=$apikey';
+    Map<String, String> cryptoPrices = {};
+    for (String crypto in cryptoList) {
+      String requestURL =
+          '$coinapiURL/$crypto/$selectedCurrency?apikey=$apikey';
 
-    try {
-      http.Response response = await http.get(Uri.parse(requestURL));
-      if (response.statusCode == 200) {
-        var decodeData = jsonDecode(response.body);
-        double lastRate = decodeData['rate'];
-        return lastRate.toStringAsFixed(0);
-      } else {
-        print('Error: ${response.statusCode}');
-        throw 'Problem with the get request';
+      try {
+        http.Response response = await http.get(Uri.parse(requestURL));
+        if (response.statusCode == 200) {
+          var decodeData = jsonDecode(response.body);
+          // print('Full JSON Response: ${jsonEncode(decodeData)}');
+          // var prettyJson = const JsonEncoder.withIndent('  ').convert(decodeData);
+          // print('Formatted JSON Response:\n$prettyJson');
+          double lastRate = decodeData['rate'];
+          cryptoPrices[crypto] = lastRate.toStringAsFixed(0);
+        } else {
+          print('Error: ${response.statusCode}');
+          throw 'Problem with the get request';
+        }
+      } catch (e) {
+        print('Fetching data for $crypto: $requestURL');
+        print('Failed to fetch data: $e');
+        cryptoPrices[crypto] = '?';
+        throw 'Unable to fetch coin data.';
       }
-    } catch (e) {
-      print('Fetching data for $selectedCurrency: $requestURL');
-      print('Failed to fetch data: $e');
-      throw 'Unable to fetch coin data.';
     }
+    return cryptoPrices;
   }
 }
