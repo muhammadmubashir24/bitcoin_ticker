@@ -11,16 +11,17 @@ class PriceScreen extends StatefulWidget {
 }
 
 class _PriceScreenState extends State<PriceScreen> {
-  String selectedCurrency = 'AUD';
+  String selectedCurrency = 'USD';
+  Map<String, String> coinValues = {};
+  bool isWaiting = false;
 
-  DropdownButton<String> andriodDropdownItems() {
+  DropdownButton<String> androidDropdownItems() {
     List<DropdownMenuItem<String>> dropdownItems = [];
     for (String currency in currenciesList) {
       var newItem = DropdownMenuItem(
         value: currency,
         child: Text(currency),
       );
-
       dropdownItems.add(newItem);
     }
 
@@ -32,7 +33,6 @@ class _PriceScreenState extends State<PriceScreen> {
           setState(() {
             selectedCurrency = value;
             getData();
-            test();
           });
         }
       },
@@ -40,32 +40,25 @@ class _PriceScreenState extends State<PriceScreen> {
   }
 
   CupertinoPicker iOSPicker() {
-    List<Text> pickerItems = [];
+    List<Text> pickerItems =
+        currenciesList.map((currency) => Text(currency)).toList();
 
-    for (String currency in currenciesList) {
-      pickerItems.add(Text(currency));
-    }
     return CupertinoPicker(
       itemExtent: 32.0,
-      onSelectedItemChanged: (selectedindex) {
-        print(selectedindex);
+      onSelectedItemChanged: (selectedIndex) {
         setState(() {
-          selectedCurrency = currenciesList[selectedindex];
+          selectedCurrency = currenciesList[selectedIndex];
           getData();
-          test();
         });
       },
       children: pickerItems,
     );
   }
 
-  // String bitcoinValue = '?';
-  Map<String, String> coinValues = {};
-  bool isWaiting = false;
-
   void getData() async {
     isWaiting = true;
     setState(() {});
+
     try {
       var data = await CoinData().getCoinData(selectedCurrency);
       setState(() {
@@ -80,27 +73,10 @@ class _PriceScreenState extends State<PriceScreen> {
     }
   }
 
-  void test() async {
-    CoinData coinData = CoinData();
-    // try {
-    //   String rate = await coinData.getCoinData('$selectedCurrency');
-    //   print('BTC to $selectedCurrency Rate: $rate');
-    // } catch (e) {
-    //   print(e);
-    // }
-    try {
-      Map<String, String> rates = await coinData.getCoinData(selectedCurrency);
-      print('Exchange Rates for $selectedCurrency: $rates');
-    } catch (e) {
-      print(e);
-    }
-  }
-
   @override
   void initState() {
     super.initState();
     getData();
-    test();
   }
 
   @override
@@ -114,30 +90,35 @@ class _PriceScreenState extends State<PriceScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          CryptoCard(
-            value: isWaiting ? '?' : (coinValues['BTC'] ?? '?'),
-            selectedCurrency: selectedCurrency,
-            cryptoCurrency: 'BTC',
-          ),
-          CryptoCard(
-            value: isWaiting ? '?' : (coinValues['ETH'] ?? '?'),
-            selectedCurrency: selectedCurrency,
-            cryptoCurrency: 'ETH',
-          ),
-          CryptoCard(
-            value: isWaiting ? '?' : (coinValues['LTC'] ?? '?'),
-            selectedCurrency: selectedCurrency,
-            cryptoCurrency: 'LTC',
-          ),
+          makeCards(),
           Container(
             height: 150.0,
             alignment: Alignment.center,
             padding: const EdgeInsets.only(bottom: 30.0),
             color: Colors.lightBlue,
-            child: Platform.isIOS ? iOSPicker() : andriodDropdownItems(),
+            child: Platform.isIOS ? iOSPicker() : androidDropdownItems(),
           ),
         ],
       ),
+    );
+  }
+
+  Column makeCards() {
+    List<CryptoCard> cryptoCards = [];
+
+    for (String crypto in cryptoList) {
+      cryptoCards.add(
+        CryptoCard(
+          value: isWaiting ? '?' : (coinValues[crypto] ?? '?'),
+          cryptoCurrency: crypto,
+          selectedCurrency: selectedCurrency,
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: cryptoCards,
     );
   }
 }
@@ -167,7 +148,7 @@ class CryptoCard extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 28.0),
           child: Text(
-            '1 $cryptoCurrency = $value $selectedCurrency', // Dynamically display the selected currency
+            '1 $cryptoCurrency = $value $selectedCurrency',
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 20.0,
